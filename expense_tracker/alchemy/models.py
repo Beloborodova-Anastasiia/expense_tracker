@@ -2,7 +2,7 @@ from sqlalchemy import Column, Date, Float, Integer, String, Time
 from sqlalchemy.orm import declarative_base
 
 
-class Transaction():
+class TransactionModel():
     __tablename__ = 'transactions'
 
     id = Column(Integer, primary_key=True)
