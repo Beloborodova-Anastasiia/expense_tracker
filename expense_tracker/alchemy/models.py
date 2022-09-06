@@ -19,5 +19,7 @@ class TransactionModel():
     description = Column(String)
 
     def __repr__(self):
-        return "<Transaction(name='%s', date='%s', amount='%s')>" % (
-                            self.name, self.date, self.amount)
+        return (f'<Transaction(name={self.name}, '
+                f'date={self.date}, '
+                f'amount={self.amount})>'
+        )
