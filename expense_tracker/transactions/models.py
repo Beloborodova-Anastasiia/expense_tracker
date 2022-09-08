@@ -1,6 +1,6 @@
 from unicodedata import category
-from django.db import models
 
+from django.db import models
 
 # class Transaction(models.Model):
 #     transaction_id = models.CharField(max_length=200)

@@ -3,7 +3,6 @@ from datetime import datetime
 
 from django.core.management import BaseCommand
 from django.shortcuts import get_object_or_404
-
 from transactions.models import Transaction
 
 ALREDY_LOADED_ERROR_MESSAGE = """
