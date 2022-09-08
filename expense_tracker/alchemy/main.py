@@ -8,6 +8,14 @@ from functions import (create_database, create_session,
                        get_or_create, load_transactions)
 
 
+def compute_summary(session, date):
+    query = session.query(Transaction).all()
+    transactions = select(Transaction).filter(Transaction.date.like('%2022-08%'))
+    print(transactions)
+    for row in session.scalars(transactions):
+        print(row)
+   
+
 def main():
     engine = create_database('sqlite:///tranasactions.db', Transaction)
     engine = create_database('sqlite:///tranasactions.db', Summary)
@@ -23,6 +31,7 @@ def main():
     session = create_session(engine)
     # data_transactions = input()
     data_transactions = 'data/MonzoDataExport_July_2022-08-19_202128.csv'
+    data_transactions = 'data/MonzoDataExport_August_2022-09-01_091402.csv'
     load_transactions(data_transactions, session)
     # transaction = get_or_create(
     #     session,
@@ -48,6 +57,8 @@ def main():
     # trans = select(Transaction).where(Transaction.category.in_(['Expenses']))
     # for user in session.scalars(trans):
     #     print(user)
+
+    compute_summary(session, '2022-07-13')
 
 if __name__ == '__main__':
     main()

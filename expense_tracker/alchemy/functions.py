@@ -1,5 +1,6 @@
 from csv import DictReader
 from datetime import datetime
+from sqlalchemy import select
 
 from models import Transaction
 from sqlalchemy import create_engine
@@ -47,3 +48,10 @@ def load_transactions(file, session):
             address=row['Address'],
             description=row['Description'],
         )
+
+
+def compute_summary(session, date):
+    transactions = select(Transaction).where(Transaction.date.in_([date]))
+    print(transactions)
+    for row in session.execute(transactions):
+        print(row)
