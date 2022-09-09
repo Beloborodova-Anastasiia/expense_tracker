@@ -4,21 +4,16 @@ from sqlalchemy.sql import func
 from sqlalchemy import select
 from models import Transaction, Summary
 
-from functions import (create_database, create_session,
-                       get_or_create, load_transactions)
+from functions import (create_database, create_session, extract_categories,
+                       compute_summary, get_or_create, load_transactions)
 
 
-def compute_summary(session, date):
-    query = session.query(Transaction).all()
-    transactions = select(Transaction).filter(Transaction.date.like('%2022-08%'))
-    print(transactions)
-    for row in session.scalars(transactions):
-        print(row)
-   
+
+
 
 def main():
     engine = create_database('sqlite:///tranasactions.db', Transaction)
-    engine = create_database('sqlite:///tranasactions.db', Summary)
+    # engine = create_database('sqlite:///tranasactions.db', Summary)
     # while True:
     #     try:
     #         data_transactions = input('Enter path to file: \n')
@@ -48,17 +43,13 @@ def main():
     # handle()
     # instance = session.query(func.avg(Transactions.amount)).filter_by(category='Bills')
     # print(Transactions.__table__)
-    # categorys = []
-    # trans = session.query(Transaction)
-    # for transaction in session.scalars(trans):
-    #     if transaction.category not in categorys:
-    #         categorys.append(transaction.category)
-    # print(categorys)
+    # 
     # trans = select(Transaction).where(Transaction.category.in_(['Expenses']))
     # for user in session.scalars(trans):
     #     print(user)
-
-    compute_summary(session, '2022-07-13')
+    # categories = extract_categories(session)
+    # print(categories)
+    compute_summary(session, '2022-07')
 
 if __name__ == '__main__':
     main()

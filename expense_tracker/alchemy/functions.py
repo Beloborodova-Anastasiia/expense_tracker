@@ -51,7 +51,36 @@ def load_transactions(file, session):
 
 
 def compute_summary(session, date):
-    transactions = select(Transaction).where(Transaction.date.in_([date]))
-    print(transactions)
-    for row in session.execute(transactions):
-        print(row)
+    
+    transactions = select(Transaction).filter(
+        Transaction.date.like(f'%{date}%')
+    ).where(Transaction.category.notin_(['Transfers', 'Family']))
+    remainder = 0
+    for trans in session.scalars(transactions):
+        remainder += trans.amount
+    print(remainder)
+    
+    income = 0
+    incoming = select(Transaction).filter(
+        Transaction.date.like(f'%{date}%')
+    ).where(Transaction.category.in_(['Income']))
+    for trans in session.scalars(incoming):
+        income += trans.amount
+    print(income)
+
+    outcome = 0
+    outcoming = select(Transaction).filter(
+        Transaction.date.like(f'%{date}%')
+    ).where(Transaction.category.notin_(['Income', 'Transfers', 'Family']))
+    for trans in session.scalars(outcoming):
+        outcome += trans.amount
+    print(outcome)
+
+
+def extract_categories(session):
+    categorys = []
+    transactions = session.query(Transaction)
+    for transaction in session.scalars(transactions):
+        if transaction.category not in categorys:
+            categorys.append(transaction.category)
+    return categorys
