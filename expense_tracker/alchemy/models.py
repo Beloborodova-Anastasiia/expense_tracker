@@ -32,7 +32,8 @@ class Summary(Base):
     __tablename__ = 'summary'
 
     id = Column(Integer, primary_key=True)
-    month = Column(Date)
+    month = Column(Integer)
+    year = Column(Integer)
     income = Column(Float)
     outcome = Column(Float)
     remainder = Column(Float)
@@ -50,13 +51,44 @@ class Spending(Base):
     __tablename__ = 'spending'
 
     id = Column(Integer, primary_key=True)
-    month = Column(Date)
-    caregory = Column(String)
+    month = Column(Integer)
+    year = Column(Integer)
+    category = Column(String)
     spending = Column(Float)
 
     def __repr__(self):
         return (
             f'<Spending(month={self.month}, '
             f'caregory={self.caregory}), '
+            f'spending={self.spending}>'
+        )
+
+
+class Accumulation(Base):
+    __tablename__ = 'accumulation'
+
+    id = Column(Integer, primary_key=True)
+    revenue = Column(Integer)
+    spending = Column(Integer)
+    accumulation = Column(Integer)
+
+    def __repr__(self):
+        return (
+            f'<Accumulation(revenue={self.revenue}, '
+            f'spending={self.spending}), '
+            f'accumulation={self.accumulation}>'
+        )
+
+
+class Average(Base):
+    __tablename__ = 'average'
+
+    id = Column(Integer, primary_key=True)
+    category = Column(String)
+    spending = Column(Float)
+
+    def __repr__(self):
+        return (
+            f'<Average(category={self.category}, '
             f'spending={self.spending}>'
         )

@@ -7,6 +7,7 @@ import utils
 from models import Summary, Transaction
 from sqlalchemy import select
 from sqlalchemy.sql import func
+from csv import DictReader
 
 
 def main():
@@ -23,42 +24,16 @@ def main():
     #         break
     session = utils.create_session(engine)
     # data_transactions = input()
-    data_transactions = 'data/MonzoDataExport_July_2022-08-19_202128.csv'
+    data_transactions = 'data/Nastia.csv'
     utils.load_transactions(session, data_transactions)
-    data_transactions = 'data/MonzoDataExport_August_2022-09-01_091402.csv'
+    data_transactions = 'data/Alex.csv'
     utils.load_transactions(session, data_transactions)
-    # transaction = get_or_create(
-    #     session,
-    #     Transaction,
-    #     name='XXX',
-    #     type='DDD',
-    #     category='DDD',
-    # )
-    # print(transaction)
-
-    # session.add_all([first, second])
-    # session.commit()
-    # database.handle('MonzoDataExport_July_2022-08-19_202128.csv')
-    # handle()
-    # instance = session.query(func.avg(Transactions.amount)).filter_by(category='Bills')
-    # print(Transactions.__table__)
-    # 
-    # trans = select(Transaction).where(Transaction.category.in_(['Expenses']))
-    # for user in session.scalars(trans):
-    #     print(user)
-    categories = utils.extract_categories(session)
-    # print(categories)
-    spending = {}
-
-    income, outcome, remainder = utils.compute_summary(session, '2022-08')
-    for category in categories:
-        if category not in utils.UNACCOUNTED_CATEGORIES:
-            spending[category] = utils.compute_category_summary(
-                session, '2022-07', category
-            )
-    # print(income, outcome, remainder)
-    utils.load_spendings(session, '2022-07')    
-
+    dates = utils.extract_dates(data_transactions)
+    for date in dates:
+        utils.load_spendings(session, date)
+        utils.load_summary(session, date)
+        utils.compute_accumulation(session)
+    utils.compute_average(session)
 
 if __name__ == '__main__':
     main()

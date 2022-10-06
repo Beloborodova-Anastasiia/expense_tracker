@@ -1,8 +1,11 @@
 from csv import DictReader
 from datetime import datetime
+from itertools import accumulate
 from sre_constants import IN_LOC_IGNORE
+from sqlalchemy.sql import func
+from sqlalchemy.sql import functions
 
-from models import Spending, Transaction
+from models import Accumulation, Spending, Summary, Transaction
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
@@ -53,6 +56,15 @@ def load_transactions(session, file):
         )
 
 
+def extract_dates(file):
+    dates = []
+    for row in DictReader(open(file)):
+        date = '{:%Y-%m}'.format(datetime.strptime(row['Date'], '%d/%m/%Y'))
+        if date not in dates:
+            dates.append(date)
+    return dates
+
+
 def compute_summary(session, date):
 
     transactions = select(Transaction).filter(
@@ -81,7 +93,7 @@ def compute_summary(session, date):
         outcome += trans.amount
         outcome = round(outcome, 2)
 
-    return income, outcome, remainder
+    return income, abs(outcome), remainder
 
 
 def extract_categories(session):
@@ -107,7 +119,7 @@ def compute_spendings(session, date):
     categories = extract_categories(session)
     spending = {}
     for category in categories:
-        if category not in UNACCOUNTED_CATEGORIES:
+        if category not in UNACCOUNTED_CATEGORIES + INCOM_CATEGORIES:
             spending[category] = compute_category_summary(
                 session, date, category
             )
@@ -117,9 +129,62 @@ def compute_spendings(session, date):
 def load_spendings(session, date):
     spendings = compute_spendings(session, date)
     for spending in spendings.keys():
-        print(spending, spendings[spending])
-    # get_or_create(
-    #         session,
-    #         Spending,
-    #         month = date,
-    #         caregory = 
+        if spendings[spending] != 0:
+            year, month = date.split('-')
+            get_or_create(
+                session,
+                Spending,
+                month=month,
+                year=year,
+                category=spending,
+                spending=abs(spendings[spending])
+            )
+
+
+def load_summary(session, date):
+    income, outcome, remainder = compute_summary(session, date)
+    year, month = date.split('-')
+    get_or_create(
+        session,
+        Summary,
+        year=year,
+        month=month,
+        income=income,
+        outcome=outcome,
+        remainder=remainder,
+    )
+
+
+def compute_accumulation(session):
+    accumulation = session.query(functions.sum(Summary.remainder)).scalar()
+    revenue = session.query(functions.sum(Summary.income)).scalar()
+    spending = session.query(functions.sum(Summary.outcome)).scalar()
+    total = session.query(Accumulation).first()
+    if total:
+        total.accumulation = accumulation
+        total.revenue = revenue
+        total.spending = spending
+        session.commit()
+    else:
+        get_or_create(
+            session,
+            Accumulation,
+            accumulation=accumulation,
+            revenue=revenue,
+            spending=spending
+        )
+    return revenue, spending, accumulation
+
+
+def compute_average(session):
+    categories = extract_categories(session)
+    for category in categories:
+        category_spend = session.query(
+            func.avg(Spending.spending).label('average')
+        ).filter_by(category=category).scalar()
+        # speding = category_spend.query(
+        #     func.avg(Spending.spending).label('average')
+        # ).scalar()
+
+        print(category_spend)
+
