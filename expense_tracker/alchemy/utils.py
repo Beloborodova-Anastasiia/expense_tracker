@@ -1,10 +1,13 @@
 from csv import DictReader
 from datetime import datetime
-from sqlalchemy import select
+from sre_constants import IN_LOC_IGNORE
 
-from models import Transaction
-from sqlalchemy import create_engine
+from models import Spending, Transaction
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
+
+UNACCOUNTED_CATEGORIES = ['Transfers', 'Family']
+INCOM_CATEGORIES = ['Income']
 
 
 def get_or_create(session, model, **kwargs):
@@ -31,7 +34,7 @@ def create_session(db_engine):
     return session
 
 
-def load_transactions(file, session):
+def load_transactions(session, file):
     for row in DictReader(open(file)):
         get_or_create(
             session,
@@ -51,30 +54,34 @@ def load_transactions(file, session):
 
 
 def compute_summary(session, date):
-    
+
     transactions = select(Transaction).filter(
         Transaction.date.like(f'%{date}%')
-    ).where(Transaction.category.notin_(['Transfers', 'Family']))
+    ).where(Transaction.category.notin_(UNACCOUNTED_CATEGORIES))
     remainder = 0
     for trans in session.scalars(transactions):
         remainder += trans.amount
-    print(remainder)
-    
+    remainder = round(remainder, 2)
+
     income = 0
     incoming = select(Transaction).filter(
         Transaction.date.like(f'%{date}%')
-    ).where(Transaction.category.in_(['Income']))
+    ).where(Transaction.category.in_(INCOM_CATEGORIES))
     for trans in session.scalars(incoming):
         income += trans.amount
-    print(income)
+        income = round(income, 2)
 
     outcome = 0
     outcoming = select(Transaction).filter(
         Transaction.date.like(f'%{date}%')
-    ).where(Transaction.category.notin_(['Income', 'Transfers', 'Family']))
+    ).where(Transaction.category.notin_(
+        INCOM_CATEGORIES + UNACCOUNTED_CATEGORIES
+    ))
     for trans in session.scalars(outcoming):
         outcome += trans.amount
-    print(outcome)
+        outcome = round(outcome, 2)
+
+    return income, outcome, remainder
 
 
 def extract_categories(session):
@@ -84,3 +91,35 @@ def extract_categories(session):
         if transaction.category not in categorys:
             categorys.append(transaction.category)
     return categorys
+
+
+def compute_category_summary(session, date, category):
+    transactions = select(Transaction).filter(
+        Transaction.date.like(f'%{date}%')
+    ).where(Transaction.category.in_([category]))
+    sum = 0
+    for trans in session.scalars(transactions):
+        sum += trans.amount
+    return round(sum, 2)
+
+
+def compute_spendings(session, date):
+    categories = extract_categories(session)
+    spending = {}
+    for category in categories:
+        if category not in UNACCOUNTED_CATEGORIES:
+            spending[category] = compute_category_summary(
+                session, date, category
+            )
+    return spending
+
+
+def load_spendings(session, date):
+    spendings = compute_spendings(session, date)
+    for spending in spendings.keys():
+        print(spending, spendings[spending])
+    # get_or_create(
+    #         session,
+    #         Spending,
+    #         month = date,
+    #         caregory = 

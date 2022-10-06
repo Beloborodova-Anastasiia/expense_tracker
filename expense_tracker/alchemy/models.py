@@ -35,18 +35,28 @@ class Summary(Base):
     month = Column(Date)
     income = Column(Float)
     outcome = Column(Float)
-    bills = Column(Float)
-    transport = Column(Float)
-    groseries = Column(Float)
-    shopping = Column(Float)
-    eating_out = Column(Float)
-    entertainment = Column(Float)
-    holidays = Column(Float)
-    others = Column(Float)
+    remainder = Column(Float)
 
     def __repr__(self):
         return (
             f'<Summary(month={self.month}, '
             f'income={self.income}), '
-            f'outcome={self.outcome}>'
+            f'outcome={self.outcome}, '
+            f'remainder={self.remainder}>'
+        )
+
+
+class Spending(Base):
+    __tablename__ = 'spending'
+
+    id = Column(Integer, primary_key=True)
+    month = Column(Date)
+    caregory = Column(String)
+    spending = Column(Float)
+
+    def __repr__(self):
+        return (
+            f'<Spending(month={self.month}, '
+            f'caregory={self.caregory}), '
+            f'spending={self.spending}>'
         )
