@@ -3,14 +3,15 @@ from datetime import datetime
 from sqlalchemy.sql import func
 from sqlalchemy.sql import functions
 
-from models import Accumulation, Spending, Summary, Transaction
+from models import Accumulation, Average, Spending, Summary, Transaction
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
-UNACCOUNTED_CATEGORIES = ['Family', ]
+CATEGORY_FAMILY = 'Family'
+UNACCOUNTED_CATEGORIES = [CATEGORY_FAMILY, ]
 UNACCOUNTED_TYPES = ['Pot transfer', ]
 INCOM_CATEGORIES = ['Income']
-SPOUSE = {
+SPOUSES = {
     'Nastia': 'Aleksandr Beloborodov',
     'Alex': 'Anastasiia Beloborodova'
 }
@@ -42,8 +43,8 @@ def create_session(db_engine):
 
 def load_transactions(session, file, author):
     for row in DictReader(open(file)):
-        if row['Name'] == SPOUSE[author]:
-            category = 'Family'
+        if row['Name'] == SPOUSES[author]:
+            category = CATEGORY_FAMILY
         else:
             category = row['Category']
         get_or_create(
@@ -112,14 +113,17 @@ def extract_categories(session):
     transactions = session.query(Transaction)
     for transaction in session.scalars(transactions):
         if transaction.category not in categorys:
-            categorys.append(transaction.category)
+            if transaction.category not in UNACCOUNTED_CATEGORIES:
+                categorys.append(transaction.category)
     return categorys
 
 
 def compute_category_summary(session, date, category):
     transactions = select(Transaction).filter(
         Transaction.date.like(f'%{date}%')
-    ).where(Transaction.category.in_([category]))
+    ).where(Transaction.category.in_([category])).where(
+        Transaction.type.notin_(UNACCOUNTED_TYPES)
+    )
     sum = 0
     for trans in session.scalars(transactions):
         sum += trans.amount
@@ -130,7 +134,7 @@ def compute_spendings(session, date):
     categories = extract_categories(session)
     spending = {}
     for category in categories:
-        if category not in UNACCOUNTED_CATEGORIES + INCOM_CATEGORIES:
+        if category not in UNACCOUNTED_CATEGORIES:
             spending[category] = compute_category_summary(
                 session, date, category
             )
@@ -190,12 +194,18 @@ def compute_accumulation(session):
 def compute_average(session):
     categories = extract_categories(session)
     for category in categories:
-        average = session.query(
+        average_spendings = session.query(
             func.avg(Spending.spending).label('average')
-        ).filter_by(category=category).scalar()
-        # speding = category_spend.query(
-        #     func.avg(Spending.spending).label('average')
-        # ).scalar()
-
-        print(average)
-
+        ).filter_by(category=category).filter_by(category=category).scalar()
+        average_spendings = round(average_spendings, 2)
+        average = session.query(Average).filter_by(category=category).first()
+        if average:
+            average.spending = average_spendings
+            session.commit()
+        else:
+            get_or_create(
+                session,
+                Average,
+                category=category,
+                spending=average_spendings
+            )

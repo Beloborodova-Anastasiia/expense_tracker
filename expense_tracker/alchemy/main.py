@@ -33,14 +33,8 @@ def main():
         utils.load_spendings(session, date)
         utils.load_summary(session, date)
         utils.compute_accumulation(session)
-    # utils.compute_average(session)
-    # general = select(Transaction).filter(
-    #     Transaction.date.like('2022-09')
-    # ).where(Transaction.category.in_(['General']))
-    general = session.query(Transaction).where(Transaction.category.in_(['General']))
-    # print(general)
-    # for trans in general:
-    #     print(trans)
+    utils.compute_average(session)
+
 
 if __name__ == '__main__':
     main()
