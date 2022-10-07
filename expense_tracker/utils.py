@@ -1,11 +1,10 @@
 from csv import DictReader
 from datetime import datetime
-from sqlalchemy.sql import func
-from sqlalchemy.sql import functions
 
 from models import Accumulation, Average, Spending, Summary, Transaction
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql import func, functions
 
 CATEGORY_FAMILY = 'Family'
 UNACCOUNTED_CATEGORIES = [CATEGORY_FAMILY, ]
@@ -15,6 +14,7 @@ TRANSACTIONS_AUTHORS = {
     'Nastia': 'Aleksandr Beloborodov',
     'Alex': 'Anastasiia Beloborodova'
 }
+PATH_TO_DATA = 'data/'
 
 
 def get_or_create(session, model, **kwargs):
@@ -200,3 +200,39 @@ def compute_average(session):
         )
         average.spending = average_spendings
         session.commit()
+
+
+def handle_transactions_file():
+    while True:
+        transactions_author = input('Enter name transactions authos: \n')
+        if transactions_author not in TRANSACTIONS_AUTHORS.keys():
+            print('This user is not in the list')
+        else:
+            break
+    engine = create_database('sqlite:///tranasactions.db', Transaction)
+    session = create_session(engine)
+    while True:
+        try:
+            file_name = input('Enter file name: \n')
+            data_transactions = PATH_TO_DATA + file_name
+            load_transactions(
+                session,
+                data_transactions,
+                transactions_author
+            )
+        except FileNotFoundError:
+            print('File not found')
+        else:
+            break
+
+    # data_transactions = input()
+    # data_transactions = 'data/Nastia.csv'
+    # utils.load_transactions(session, data_transactions, 'Nastia')
+    # data_transactions = 'data/Alex.csv'
+    # utils.load_transactions(session, data_transactions, 'Alex')
+    dates = extract_dates(data_transactions)
+    for date in dates:
+        load_spendings(session, date)
+        load_summary(session, date)
+    compute_accumulation(session)
+    compute_average(session)
