@@ -11,7 +11,7 @@ CATEGORY_FAMILY = 'Family'
 UNACCOUNTED_CATEGORIES = [CATEGORY_FAMILY, ]
 UNACCOUNTED_TYPES = ['Pot transfer', ]
 INCOM_CATEGORIES = ['Income']
-SPOUSES = {
+TRANSACTIONS_AUTHORS = {
     'Nastia': 'Aleksandr Beloborodov',
     'Alex': 'Anastasiia Beloborodova'
 }
@@ -19,13 +19,11 @@ SPOUSES = {
 
 def get_or_create(session, model, **kwargs):
     instance = session.query(model).filter_by(**kwargs).first()
-    if instance:
-        return instance
-    else:
+    if not instance:
         instance = model(**kwargs)
         session.add(instance)
         session.commit()
-        return instance
+    return instance
 
 
 def create_database(db_path, model):
@@ -43,7 +41,7 @@ def create_session(db_engine):
 
 def load_transactions(session, file, author):
     for row in DictReader(open(file)):
-        if row['Name'] == SPOUSES[author]:
+        if row['Name'] == TRANSACTIONS_AUTHORS[author]:
             category = CATEGORY_FAMILY
         else:
             category = row['Category']
@@ -146,48 +144,45 @@ def load_spendings(session, date):
     for spending in spendings.keys():
         if spendings[spending] != 0:
             year, month = date.split('-')
-            get_or_create(
+            spending_category = get_or_create(
                 session,
                 Spending,
                 month=month,
                 year=year,
                 category=spending,
-                spending=abs(spendings[spending])
             )
+            spending_category.spending = abs(spendings[spending])
+            session.commit()
 
 
 def load_summary(session, date):
     income, outcome, remainder = compute_summary(session, date)
     year, month = date.split('-')
-    get_or_create(
+    summary = get_or_create(
         session,
         Summary,
         year=year,
         month=month,
-        income=income,
-        outcome=outcome,
-        remainder=remainder,
     )
+    summary.income = income
+    summary.outcome = outcome
+    summary.remainder = remainder
+    session.commit()
 
 
 def compute_accumulation(session):
     accumulation = session.query(functions.sum(Summary.remainder)).scalar()
     revenue = session.query(functions.sum(Summary.income)).scalar()
     spending = session.query(functions.sum(Summary.outcome)).scalar()
-    total = session.query(Accumulation).first()
-    if total:
-        total.accumulation = round(accumulation, 2)
-        total.revenue = round(revenue, 2)
-        total.spending = round(spending, 2)
-        session.commit()
-    else:
-        get_or_create(
+    total = get_or_create(
             session,
             Accumulation,
-            accumulation=accumulation,
-            revenue=revenue,
-            spending=spending
-        )
+    )
+    total.accumulation = round(accumulation, 2)
+    total.revenue = round(revenue, 2)
+    total.spending = round(spending, 2)
+    session.commit()
+
     return revenue, spending, accumulation
 
 
@@ -198,14 +193,10 @@ def compute_average(session):
             func.avg(Spending.spending).label('average')
         ).filter_by(category=category).filter_by(category=category).scalar()
         average_spendings = round(average_spendings, 2)
-        average = session.query(Average).filter_by(category=category).first()
-        if average:
-            average.spending = average_spendings
-            session.commit()
-        else:
-            get_or_create(
-                session,
-                Average,
-                category=category,
-                spending=average_spendings
-            )
+        average = get_or_create(
+            session,
+            Average,
+            category=category,
+        )
+        average.spending = average_spendings
+        session.commit()
