@@ -25,15 +25,22 @@ def main():
     session = utils.create_session(engine)
     # data_transactions = input()
     data_transactions = 'data/Nastia.csv'
-    utils.load_transactions(session, data_transactions)
+    utils.load_transactions(session, data_transactions, 'Nastia')
     data_transactions = 'data/Alex.csv'
-    utils.load_transactions(session, data_transactions)
+    utils.load_transactions(session, data_transactions, 'Alex')
     dates = utils.extract_dates(data_transactions)
     for date in dates:
         utils.load_spendings(session, date)
         utils.load_summary(session, date)
         utils.compute_accumulation(session)
-    utils.compute_average(session)
+    # utils.compute_average(session)
+    # general = select(Transaction).filter(
+    #     Transaction.date.like('2022-09')
+    # ).where(Transaction.category.in_(['General']))
+    general = session.query(Transaction).where(Transaction.category.in_(['General']))
+    # print(general)
+    # for trans in general:
+    #     print(trans)
 
 if __name__ == '__main__':
     main()

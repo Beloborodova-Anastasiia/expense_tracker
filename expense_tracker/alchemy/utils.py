@@ -1,7 +1,5 @@
 from csv import DictReader
 from datetime import datetime
-from itertools import accumulate
-from sre_constants import IN_LOC_IGNORE
 from sqlalchemy.sql import func
 from sqlalchemy.sql import functions
 
@@ -9,8 +7,13 @@ from models import Accumulation, Spending, Summary, Transaction
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
-UNACCOUNTED_CATEGORIES = ['Transfers', 'Family']
+UNACCOUNTED_CATEGORIES = ['Family', ]
+UNACCOUNTED_TYPES = ['Pot transfer', ]
 INCOM_CATEGORIES = ['Income']
+SPOUSE = {
+    'Nastia': 'Aleksandr Beloborodov',
+    'Alex': 'Anastasiia Beloborodova'
+}
 
 
 def get_or_create(session, model, **kwargs):
@@ -37,15 +40,19 @@ def create_session(db_engine):
     return session
 
 
-def load_transactions(session, file):
+def load_transactions(session, file, author):
     for row in DictReader(open(file)):
+        if row['Name'] == SPOUSE[author]:
+            category = 'Family'
+        else:
+            category = row['Category']
         get_or_create(
             session,
             Transaction,
             transaction_id=row['Transaction ID'],
             name=row['Name'],
             type=row['Type'],
-            category=row['Category'],
+            category=category,
             date=datetime.strptime(row['Date'], '%d/%m/%Y').date(),
             time=datetime.strptime(row['Time'], '%H:%M:%S').time(),
             amount=row['Amount'],
@@ -69,7 +76,9 @@ def compute_summary(session, date):
 
     transactions = select(Transaction).filter(
         Transaction.date.like(f'%{date}%')
-    ).where(Transaction.category.notin_(UNACCOUNTED_CATEGORIES))
+    ).where(Transaction.category.notin_(UNACCOUNTED_CATEGORIES)).where(
+        Transaction.type.notin_(UNACCOUNTED_TYPES)
+        )
     remainder = 0
     for trans in session.scalars(transactions):
         remainder += trans.amount
@@ -88,7 +97,9 @@ def compute_summary(session, date):
         Transaction.date.like(f'%{date}%')
     ).where(Transaction.category.notin_(
         INCOM_CATEGORIES + UNACCOUNTED_CATEGORIES
-    ))
+    )).where(
+        Transaction.type.notin_(UNACCOUNTED_TYPES)
+        )
     for trans in session.scalars(outcoming):
         outcome += trans.amount
         outcome = round(outcome, 2)
@@ -161,9 +172,9 @@ def compute_accumulation(session):
     spending = session.query(functions.sum(Summary.outcome)).scalar()
     total = session.query(Accumulation).first()
     if total:
-        total.accumulation = accumulation
-        total.revenue = revenue
-        total.spending = spending
+        total.accumulation = round(accumulation, 2)
+        total.revenue = round(revenue, 2)
+        total.spending = round(spending, 2)
         session.commit()
     else:
         get_or_create(
@@ -179,12 +190,12 @@ def compute_accumulation(session):
 def compute_average(session):
     categories = extract_categories(session)
     for category in categories:
-        category_spend = session.query(
+        average = session.query(
             func.avg(Spending.spending).label('average')
         ).filter_by(category=category).scalar()
         # speding = category_spend.query(
         #     func.avg(Spending.spending).label('average')
         # ).scalar()
 
-        print(category_spend)
+        print(average)
 
