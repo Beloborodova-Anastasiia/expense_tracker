@@ -92,3 +92,17 @@ class Average(Base):
             f'<Average(category={self.category}, '
             f'spending={self.spending}>'
         )
+
+
+class User(Base):
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True)
+    username = Column(String)
+    relative = Column(String)
+
+    def __repr__(self):
+        return (
+            f'<User(username={self.name}, '
+            f'relative={self.relative}>'
+        )

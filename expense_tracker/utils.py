@@ -1,7 +1,7 @@
 from csv import DictReader
 from datetime import datetime
 
-from models import Accumulation, Average, Spending, Summary, Transaction
+from models import Accumulation, Average, Spending, Summary, Transaction, User
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import func, functions
@@ -10,10 +10,10 @@ CATEGORY_FAMILY = 'Family'
 UNACCOUNTED_CATEGORIES = [CATEGORY_FAMILY, ]
 UNACCOUNTED_TYPES = ['Pot transfer', ]
 INCOM_CATEGORIES = ['Income']
-TRANSACTIONS_AUTHORS = {
-    'Nastia': 'Aleksandr Beloborodov',
-    'Alex': 'Anastasiia Beloborodova'
-}
+# USERS_RELATIONS = {
+#     'Nastia': 'Aleksandr Beloborodov',
+#     'Alex': 'Anastasiia Beloborodova'
+# }
 PATH_TO_DATA = 'data/'
 
 
@@ -39,9 +39,10 @@ def create_session(db_engine):
     return session
 
 
-def load_transactions(session, file, author):
+def load_transactions(session, file, user):
     for row in DictReader(open(file)):
-        if row['Name'] == TRANSACTIONS_AUTHORS[author]:
+        # if row['Name'] == USERS_RELATIONS[author]:
+        if row['Name'] == user.relative:
             category = CATEGORY_FAMILY
         else:
             category = row['Category']
@@ -202,28 +203,36 @@ def compute_average(session):
         session.commit()
 
 
-def handle_transactions_file():
-    while True:
-        transactions_author = input('Enter name transactions authos: \n')
-        if transactions_author not in TRANSACTIONS_AUTHORS.keys():
-            print('This user is not in the list')
-        else:
-            break
+def handle_transactions_file(username=None, file=None):
     engine = create_database('sqlite:///tranasactions.db', Transaction)
     session = create_session(engine)
-    while True:
-        try:
-            file_name = input('Enter file name: \n')
-            data_transactions = PATH_TO_DATA + file_name
-            load_transactions(
-                session,
-                data_transactions,
-                transactions_author
-            )
-        except FileNotFoundError:
-            print('File not found')
-        else:
-            break
+    if not username:
+        username = input('Enter name transactions authos: \n')
+    user = get_or_create(
+        session,
+        User,
+        username=username
+    )
+    if not user.relative:
+        relative = input('Enter full name relative: \n')
+    # if user not in USERS_RELATIONS.keys():
+        # print('This user is not in the list')
+        user.relative = relative
+
+    if not file:
+        while True:
+            try:
+                file_name = input('Enter file name: \n')
+                data_transactions = PATH_TO_DATA + file_name
+                load_transactions(
+                    session,
+                    data_transactions,
+                    user
+                )
+            except FileNotFoundError:
+                print('File not found')
+            else:
+                break
 
     # data_transactions = input()
     # data_transactions = 'data/Nastia.csv'
