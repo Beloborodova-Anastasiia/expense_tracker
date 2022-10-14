@@ -59,7 +59,7 @@ class Spending(Base):
     def __repr__(self):
         return (
             f'<Spending(month={self.month}, '
-            f'caregory={self.caregory}), '
+            f'category={self.category}), '
             f'spending={self.spending}>'
         )
 
