@@ -133,3 +133,8 @@ data
 /data
 .data
 data/
+
+output_files/
+/output_files
+.output_files
+output_files

@@ -1,0 +1,93 @@
+id,month,year,category,spending
+1,1,2022,Income,4196.64
+2,1,2022,Eating out,3.0
+3,2,2022,Income,6068.32
+4,2,2022,Eating out,172.06
+5,2,2022,Groceries,162.03
+6,2,2022,Shopping,0.75
+7,2,2022,Transport,50.02
+8,2,2022,Bills,2379.25
+9,2,2022,Entertainment,3.0
+10,2,2022,General,22.64
+11,2,2022,Finances,1022.5
+12,2,2022,Holidays,1.45
+13,3,2022,Income,5014.97
+14,3,2022,Eating out,168.13
+15,3,2022,Groceries,462.54
+16,3,2022,Shopping,1349.66
+17,3,2022,Transport,287.39
+18,3,2022,Bills,88.91
+19,3,2022,Entertainment,16.09
+20,3,2022,General,86.57
+21,3,2022,Finances,61.13
+22,3,2022,Holidays,1423.26
+23,3,2022,Expenses,255.0
+24,4,2022,Income,4362.54
+25,4,2022,Eating out,265.59
+26,4,2022,Groceries,410.22
+27,4,2022,Shopping,547.21
+28,4,2022,Transport,464.75
+29,4,2022,Bills,1346.44
+30,4,2022,Entertainment,30.1
+31,4,2022,General,45.7
+32,4,2022,Holidays,772.11
+33,4,2022,Charity,50.0
+34,5,2022,Income,4536.03
+35,5,2022,Transfers,802.17
+36,5,2022,Eating out,464.38
+37,5,2022,Groceries,332.03
+38,5,2022,Shopping,184.87
+39,5,2022,Transport,304.51
+40,5,2022,Bills,2481.98
+41,5,2022,Entertainment,35.7
+42,5,2022,Holidays,794.41
+43,6,2022,Income,4362.53
+44,6,2022,Eating out,153.48
+45,6,2022,Groceries,410.76
+46,6,2022,Shopping,353.44
+47,6,2022,Transport,99.51
+48,6,2022,Bills,1352.22
+49,6,2022,Finances,150.0
+50,6,2022,Holidays,381.1
+51,6,2022,Personal care,51.43
+52,7,2022,Income,4391.95
+53,7,2022,Transfers,1.0
+54,7,2022,Eating out,347.13
+55,7,2022,Groceries,684.76
+56,7,2022,Shopping,99.44
+57,7,2022,Transport,570.47
+58,7,2022,Bills,2340.27
+59,7,2022,Entertainment,43.13
+60,7,2022,Finances,220.0
+61,7,2022,Holidays,1087.14
+62,7,2022,Expenses,40.0
+63,7,2022,Personal care,47.0
+64,8,2022,Income,4167.48
+65,8,2022,Transfers,4.0
+66,8,2022,Eating out,219.68
+67,8,2022,Groceries,413.49
+68,8,2022,Shopping,248.57
+69,8,2022,Transport,114.83
+70,8,2022,Bills,1566.22
+71,8,2022,Entertainment,124.3
+72,8,2022,Holidays,643.33
+73,9,2022,Income,4391.94
+74,9,2022,Eating out,371.1
+75,9,2022,Groceries,436.77
+76,9,2022,Shopping,272.58
+77,9,2022,Transport,306.68
+78,9,2022,Bills,1867.36
+79,9,2022,Entertainment,10.1
+80,9,2022,General,15.37
+81,9,2022,Finances,47.06
+82,9,2022,Holidays,196.16
+83,9,2022,Charity,1400.0
+84,10,2022,Eating out,50.62
+85,10,2022,Groceries,131.06
+86,10,2022,Shopping,291.25
+87,10,2022,Transport,16.64
+88,10,2022,Bills,1267.22
+89,10,2022,Entertainment,17.99
+90,10,2022,General,5.32
+91,10,2022,Finances,40.0
+92,5,2022,Personal care,140.0

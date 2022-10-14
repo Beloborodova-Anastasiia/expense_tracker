@@ -1,5 +1,8 @@
 from csv import DictReader
+import csv
 from datetime import datetime
+import os
+
 
 from models import Accumulation, Average, Spending, Summary, Transaction, User
 from sqlalchemy import create_engine, select
@@ -104,7 +107,18 @@ def compute_summary(session, date):
         outcome += trans.amount
         outcome = round(outcome, 2)
 
-    return income, abs(outcome), remainder
+    outcome = abs(outcome)
+    year, month = date.split('-')
+    summary = get_or_create(
+        session,
+        Summary,
+        year=year,
+        month=month,
+    )
+    summary.income = income
+    summary.outcome = outcome
+    summary.remainder = remainder
+    session.commit()
 
 
 def extract_categories(session):
@@ -131,17 +145,12 @@ def compute_category_summary(session, date, category):
 
 def compute_spendings(session, date):
     categories = extract_categories(session)
-    spending = {}
+    spendings = {}
     for category in categories:
         if category not in UNACCOUNTED_CATEGORIES:
-            spending[category] = compute_category_summary(
+            spendings[category] = compute_category_summary(
                 session, date, category
             )
-    return spending
-
-
-def load_spendings(session, date):
-    spendings = compute_spendings(session, date)
     for spending in spendings.keys():
         if spendings[spending] != 0:
             year, month = date.split('-')
@@ -154,21 +163,6 @@ def load_spendings(session, date):
             )
             spending_category.spending = abs(spendings[spending])
             session.commit()
-
-
-def load_summary(session, date):
-    income, outcome, remainder = compute_summary(session, date)
-    year, month = date.split('-')
-    summary = get_or_create(
-        session,
-        Summary,
-        year=year,
-        month=month,
-    )
-    summary.income = income
-    summary.outcome = outcome
-    summary.remainder = remainder
-    session.commit()
 
 
 def compute_accumulation(session):
@@ -203,9 +197,7 @@ def compute_average(session):
         session.commit()
 
 
-def handle_transactions_file(username=None, file=None):
-    engine = create_database('sqlite:///tranasactions.db', Transaction)
-    session = create_session(engine)
+def handle_transactions_file(session, username=None, file=None):
     if not username:
         username = input('Enter name transactions authos: \n')
     user = get_or_create(
@@ -241,7 +233,30 @@ def handle_transactions_file(username=None, file=None):
     # utils.load_transactions(session, data_transactions, 'Alex')
     dates = extract_dates(data_transactions)
     for date in dates:
-        load_spendings(session, date)
-        load_summary(session, date)
+        compute_spendings(session, date)
+        compute_summary(session, date)
     compute_accumulation(session)
     compute_average(session)
+
+
+def import_to_csv(session, table):
+    date = datetime.today().date()
+    tablename = table.__name__
+    filename = tablename + '_' + str(date) + '.csv'
+    headers = []
+    for member in table.__dict__.keys():
+        if '_' not in member:
+            headers.append(member)
+    filepath = os.path.join('output_files', filename)
+    if not os.path.exists('output_files'):
+        os.makedirs('output_files')
+    file = open(filepath, 'w')
+    writer = csv.DictWriter(file, fieldnames=headers)
+    writer.writeheader()
+    table = session.query(table)
+    with file:
+        for item in table:
+            dict_item = {}
+            for head in headers:
+                dict_item[head] = getattr(item, head)
+            writer.writerow(dict_item)
