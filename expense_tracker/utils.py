@@ -1,27 +1,24 @@
-from csv import DictReader
 import csv
-from datetime import datetime
 import os
+from csv import DictReader
+from datetime import datetime
 
-
+from constants import TRANSLETION_RU
 from models import Accumulation, Average, Spending, Summary, Transaction, User
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import func, functions
-from constants import TRANSLETION_RU
 
 CATEGORY_FAMILY = 'Family'
 UNACCOUNTED_CATEGORIES = [CATEGORY_FAMILY, ]
 UNACCOUNTED_TYPES = ['Pot transfer', ]
 INCOM_CATEGORIES = ['Income']
-# USERS_RELATIONS = {
-#     'Nastia': 'Aleksandr Beloborodov',
-#     'Alex': 'Anastasiia Beloborodova'
-# }
 PATH_TO_DATA = 'data/'
 PATH_TO_OUTPUT_FILES = 'output_files'
 LANGUAGE_RU = 'ru'
 LANGUAGE_EN = 'en'
+TYPE_FILE = '.csv'
+GROUND = '_'
 
 
 def get_or_create(session, model, **kwargs):
@@ -248,17 +245,17 @@ def import_to_csv(session, table, language=LANGUAGE_EN):
     tablename = table.__name__
     attribute = []
     for member in table.__dict__.keys():
-        if '_' not in member:
+        if GROUND not in member:
             attribute.append(member)
 
     headers = []
     if language == LANGUAGE_RU:
-        filename = (TRANSLETION_RU[tablename] + '_' + str(date)
-                    + '.csv')
+        filename = (TRANSLETION_RU[tablename] + GROUND + str(date)
+                    + TYPE_FILE)
         for item in attribute:
             headers.append(TRANSLETION_RU[item])
     else:
-        filename = tablename + '_' + str(date) + '.csv'
+        filename = tablename + GROUND + str(date) + TYPE_FILE
         headers = attribute
 
     filepath = os.path.join(PATH_TO_OUTPUT_FILES, filename)
@@ -280,4 +277,57 @@ def import_to_csv(session, table, language=LANGUAGE_EN):
                     dict_item[TRANSLETION_RU[attr]] = item_attr
                 else:
                     dict_item[attr] = getattr(item, attr)
+            writer.writerow(dict_item)
+
+
+def import_to_csv_categories(session, table, language=LANGUAGE_EN):
+    date = datetime.today().date()
+    tablename = table.__name__
+    attribute = []
+    attribute.append('month')
+    attribute.append('year')
+    categories = extract_categories(session)
+    for category in categories:
+        attribute.append(category)
+    headers = []
+
+    if language == LANGUAGE_RU:
+        filename = (TRANSLETION_RU[tablename] + GROUND + str(date)
+                    + TYPE_FILE)
+        for item in attribute:
+            headers.append(TRANSLETION_RU[item])
+    else:
+        filename = tablename + GROUND + str(date) + TYPE_FILE
+        headers = attribute
+
+    filepath = os.path.join(PATH_TO_OUTPUT_FILES, filename)
+    if not os.path.exists(PATH_TO_OUTPUT_FILES):
+        os.makedirs(PATH_TO_OUTPUT_FILES)
+    file = open(filepath, 'w')
+    writer = csv.DictWriter(file, fieldnames=headers)
+    writer.writeheader()
+    table = session.query(table)
+
+    dates = []
+    for record in session.scalars(table):
+        if (record.year, record.month) not in dates:
+            dates.append((record.year, record.month))
+
+    with file:
+        for date in dates:
+            dict_item = {}
+            table_month = table.filter_by(year=date[0]).filter_by(
+                month=date[1]
+            )
+            for item in table_month:
+                if language == LANGUAGE_RU:
+                    dict_item[TRANSLETION_RU[item.category]] = item.spending
+                else:
+                    dict_item[item.category] = item.spending
+            if language == LANGUAGE_RU:
+                dict_item[TRANSLETION_RU['year']] = item.year
+                dict_item[TRANSLETION_RU['month']] = item.month
+            else:
+                dict_item['year'] = item.year
+                dict_item['month'] = item.month
             writer.writerow(dict_item)

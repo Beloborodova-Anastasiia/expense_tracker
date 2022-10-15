@@ -1,0 +1,10 @@
+flake8==5.0.4
+greenlet==1.1.3
+mccabe==0.7.0
+pycodestyle==2.9.1
+pyflakes==2.5.0
+# PyQt5==5.15.7
+# PyQt5-Qt5==5.15.2
+# PyQt5-sip==12.11.0
+SQLAlchemy==1.4.40
+SQLAlchemy-Utils==0.38.3
