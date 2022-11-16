@@ -250,14 +250,9 @@ def handle_transactions_file(session, username=None, file=None):
     compute_average_per_month(session)
 
 
-def import_to_csv(session, table, language=LANGUAGE_EN):
+def create_file(table, attribute, language=LANGUAGE_EN):
     date = datetime.today().date()
     tablename = table.__name__
-    attribute = []
-    for member in table.__dict__.keys():
-        if GROUND not in member:
-            attribute.append(member)
-
     headers = []
     if language == LANGUAGE_RU:
         filename = (TRANSLETION_RU[tablename] + GROUND + str(date)
@@ -274,10 +269,20 @@ def import_to_csv(session, table, language=LANGUAGE_EN):
     file = open(filepath, 'w')
     writer = csv.DictWriter(file, fieldnames=headers)
     writer.writeheader()
-    table = session.query(table)
+    return file, writer
+
+
+def import_to_csv(session, table, language=LANGUAGE_EN):
+    attribute = []
+    for member in table.__dict__.keys():
+        if GROUND not in member:
+            attribute.append(member)
+
+    file, writer = create_file(table, attribute, language)
+    query = session.query(table)
 
     with file:
-        for item in table:
+        for item in query:
             dict_item = {}
             for attr in attribute:
                 if language == LANGUAGE_RU:
@@ -291,42 +296,25 @@ def import_to_csv(session, table, language=LANGUAGE_EN):
 
 
 def import_to_csv_categories(session, table, language=LANGUAGE_EN):
-    date = datetime.today().date()
-    tablename = table.__name__
     attribute = []
     attribute.append(MONTH)
     attribute.append(YEAR)
     categories = extract_categories(session)
     for category in categories:
         attribute.append(category)
-    headers = []
 
-    if language == LANGUAGE_RU:
-        filename = (TRANSLETION_RU[tablename] + GROUND + str(date)
-                    + TYPE_FILE)
-        for item in attribute:
-            headers.append(TRANSLETION_RU[item])
-    else:
-        filename = tablename + GROUND + str(date) + TYPE_FILE
-        headers = attribute
-
-    filepath = os.path.join(PATH_TO_OUTPUT_FILES, filename)
-    if not os.path.exists(PATH_TO_OUTPUT_FILES):
-        os.makedirs(PATH_TO_OUTPUT_FILES)
-    file = open(filepath, 'w')
-    writer = csv.DictWriter(file, fieldnames=headers)
-    writer.writeheader()
-    table = session.query(table)
+    file, writer = create_file(table, attribute, language)
+    query = session.query(table)
 
     dates = []
-    for record in session.scalars(table):
+    for record in session.scalars(query):
         if (record.year, record.month) not in dates:
             dates.append((record.year, record.month))
 
     with file:
         for date in dates:
             dict_item = {}
-            table_month = table.filter_by(year=date[0]).filter_by(
+            table_month = query.filter_by(year=date[0]).filter_by(
                 month=date[1]
             )
             for item in table_month:
