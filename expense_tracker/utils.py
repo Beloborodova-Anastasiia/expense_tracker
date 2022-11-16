@@ -19,6 +19,9 @@ LANGUAGE_RU = 'ru'
 LANGUAGE_EN = 'en'
 TYPE_FILE = '.csv'
 GROUND = '_'
+YEAR = 'year'
+MONTH = 'month'
+LABEL_FOR_SUM = 'summary'
 
 
 def get_or_create(session, model, **kwargs):
@@ -45,7 +48,6 @@ def create_session(db_engine):
 
 def load_transactions(session, file, user):
     for row in DictReader(open(file)):
-        # if row['Name'] == USERS_RELATIONS[author]:
         if row['Name'] == user.relative:
             category = CATEGORY_FAMILY
         else:
@@ -82,7 +84,7 @@ def compute_summary(session, date):
         Transaction.date.like(f'%{date}%')
     ).where(Transaction.category.notin_(UNACCOUNTED_CATEGORIES)).where(
         Transaction.type.notin_(UNACCOUNTED_TYPES)
-        )
+    )
     remainder = 0
     for trans in session.scalars(transactions):
         remainder += trans.amount
@@ -103,7 +105,7 @@ def compute_summary(session, date):
         INCOM_CATEGORIES + UNACCOUNTED_CATEGORIES
     )).where(
         Transaction.type.notin_(UNACCOUNTED_TYPES)
-        )
+    )
     for trans in session.scalars(outcoming):
         outcome += trans.amount
         outcome = round(outcome, 2)
@@ -132,7 +134,7 @@ def extract_categories(session):
     return categorys
 
 
-def compute_category_summary(session, date, category):
+def compute_category_summary_in_month(session, date, category):
     transactions = select(Transaction).filter(
         Transaction.date.like(f'%{date}%')
     ).where(Transaction.category.in_([category])).where(
@@ -149,7 +151,7 @@ def compute_spendings(session, date):
     spendings = {}
     for category in categories:
         if category not in UNACCOUNTED_CATEGORIES:
-            spendings[category] = compute_category_summary(
+            spendings[category] = compute_category_summary_in_month(
                 session, date, category
             )
     for spending in spendings.keys():
@@ -171,8 +173,8 @@ def compute_accumulation(session):
     revenue = session.query(functions.sum(Summary.income)).scalar()
     spending = session.query(functions.sum(Summary.outcome)).scalar()
     total = get_or_create(
-            session,
-            Accumulation,
+        session,
+        Accumulation,
     )
     total.accumulation = round(accumulation, 2)
     total.revenue = round(revenue, 2)
@@ -182,12 +184,20 @@ def compute_accumulation(session):
     return revenue, spending, accumulation
 
 
-def compute_average(session):
+def compute_average_per_month(session):
     categories = extract_categories(session)
+    dates = []
+    transactions = session.query(Transaction)
+    for transaction in session.scalars(transactions):
+        date = [transaction.date.year, transaction.date.month]
+        if date not in dates:
+            dates.append(date)
+    amount_months = len(dates)
     for category in categories:
-        average_spendings = session.query(
-            func.avg(Spending.spending).label('average')
-        ).filter_by(category=category).filter_by(category=category).scalar()
+        all_spendings_in_category = session.query(
+            func.sum(Spending.spending).label(LABEL_FOR_SUM)
+        ).filter_by(category=category).scalar()
+        average_spendings = all_spendings_in_category / amount_months
         average_spendings = round(average_spendings, 2)
         average = get_or_create(
             session,
@@ -229,15 +239,15 @@ def handle_transactions_file(session, username=None, file=None):
 
     # data_transactions = input()
     # data_transactions = 'data/Nastia.csv'
-    # utils.load_transactions(session, data_transactions, 'Nastia')
+    # load_transactions(session, data_transactions, 'Nastia')
     # data_transactions = 'data/Alex.csv'
-    # utils.load_transactions(session, data_transactions, 'Alex')
+    # load_transactions(session, data_transactions, 'Alex')
     dates = extract_dates(data_transactions)
     for date in dates:
         compute_spendings(session, date)
         compute_summary(session, date)
     compute_accumulation(session)
-    compute_average(session)
+    compute_average_per_month(session)
 
 
 def import_to_csv(session, table, language=LANGUAGE_EN):
@@ -284,8 +294,8 @@ def import_to_csv_categories(session, table, language=LANGUAGE_EN):
     date = datetime.today().date()
     tablename = table.__name__
     attribute = []
-    attribute.append('month')
-    attribute.append('year')
+    attribute.append(MONTH)
+    attribute.append(YEAR)
     categories = extract_categories(session)
     for category in categories:
         attribute.append(category)
@@ -325,9 +335,9 @@ def import_to_csv_categories(session, table, language=LANGUAGE_EN):
                 else:
                     dict_item[item.category] = item.spending
             if language == LANGUAGE_RU:
-                dict_item[TRANSLETION_RU['year']] = item.year
-                dict_item[TRANSLETION_RU['month']] = item.month
+                dict_item[TRANSLETION_RU[YEAR]] = item.year
+                dict_item[TRANSLETION_RU[MONTH]] = item.month
             else:
-                dict_item['year'] = item.year
-                dict_item['month'] = item.month
+                dict_item[YEAR] = item.year
+                dict_item[MONTH] = item.month
             writer.writerow(dict_item)
