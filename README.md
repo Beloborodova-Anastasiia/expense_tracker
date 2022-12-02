@@ -54,7 +54,7 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Загрузить CSV-файл с тратами:
+Копировать CSV-файл с тратами в директорию data/:
 
 ```
 cp your_file.csv data/
@@ -78,3 +78,4 @@ expense_tracker/output_files
 
 Белобородова Анастасия  beloborodova.anastasiia@yandex.ru,
                         anastasiia.beloborodova@gmail.com
+
