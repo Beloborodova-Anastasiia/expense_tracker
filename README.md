@@ -98,6 +98,4 @@ expense_tracker/output_files
 
 Anastasiia Beloborodova 
 
-beloborodova.anastasiia@yandex.ru
-
 anastasiia.beloborodova@gmail.com
