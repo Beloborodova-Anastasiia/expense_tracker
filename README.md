@@ -44,7 +44,7 @@ Create and activate virtual environment:
 
 ```
 for Mac or Linux:
-python3 -m venv env
+python3 -m venv venv
 source venv/bin/activate
 ```
 ```
