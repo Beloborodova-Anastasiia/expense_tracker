@@ -1,4 +1,4 @@
-# "Expense Tracker" progect
+# "Expense Tracker" project
 
 ### Description
 
@@ -18,7 +18,7 @@ Also Expense Tracker allows to calculate:
 
 - expenses and balances for all time
 
-Сalculation result saves to a CSV file.
+Сalculation result is saved to a CSV file.
 
 Expense Tracker allows to keep track of expenses together with your spouse.
 
