@@ -27,6 +27,7 @@ NO = 'no'
 
 
 def get_or_create(session, model, **kwargs):
+    "Get or create object from database"
     instance = session.query(model).filter_by(**kwargs).first()
     if not instance:
         instance = model(**kwargs)
@@ -48,6 +49,7 @@ def create_session(db_engine):
 
 
 def load_transactions(session, file, user):
+    "Get transactions from input CSV-file and load it in database"
     for row in DictReader(open(file)):
         if row['Name'] == user.relative:
             category = CATEGORY_FAMILY
