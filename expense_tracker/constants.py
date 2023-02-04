@@ -1,4 +1,4 @@
-TRANSLETION_RU = {
+TRANSLATION_EN_RU = {
     'id': 'Номер',
     'month': 'Месяц',
     'year': 'Год',
@@ -8,7 +8,6 @@ TRANSLETION_RU = {
     'category': 'Категория',
     'spending': 'Расход',
     'revenue': 'Доход',
-    'spending': 'Расход',
     'accumulation': 'Накопления',
     'Average': 'Среднее',
     'Accumulation': 'Накопления',

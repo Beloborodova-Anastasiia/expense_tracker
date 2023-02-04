@@ -3,7 +3,7 @@ import os
 from csv import DictReader
 from datetime import datetime
 
-from constants import TRANSLETION_RU
+from constants import TRANSLATION_EN_RU
 from models import Accumulation, Average, Spending, Summary, Transaction, User
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
@@ -12,9 +12,9 @@ from sqlalchemy.sql import func, functions
 CATEGORY_FAMILY = 'Family'
 UNACCOUNTED_CATEGORIES = [CATEGORY_FAMILY, ]
 UNACCOUNTED_TYPES = ['Pot transfer', ]
-INCOM_CATEGORIES = ['Income']
+INCOME_CATEGORIES = ['Income']
 PATH_TO_DATA = 'data/'
-PATH_TO_OUTPUT_FILES = 'output_files'
+PATH_TO_OUTPUT_FILES = 'output'
 LANGUAGE_RU = 'ru'
 LANGUAGE_EN = 'en'
 TYPE_FILE = '.csv'
@@ -22,6 +22,8 @@ GROUND = '_'
 YEAR = 'year'
 MONTH = 'month'
 LABEL_FOR_SUM = 'summary'
+YES = 'yes'
+NO = 'no'
 
 
 def get_or_create(session, model, **kwargs):
@@ -35,7 +37,6 @@ def get_or_create(session, model, **kwargs):
 
 def create_database(db_path, model):
     db_engine = create_engine(db_path)
-    # Base.metadata.create_all(engine)
     model.metadata.create_all(db_engine)
     return db_engine
 
@@ -93,7 +94,7 @@ def compute_summary(session, date):
     income = 0
     incoming = select(Transaction).filter(
         Transaction.date.like(f'%{date}%')
-    ).where(Transaction.category.in_(INCOM_CATEGORIES))
+    ).where(Transaction.category.in_(INCOME_CATEGORIES))
     for trans in session.scalars(incoming):
         income += trans.amount
         income = round(income, 2)
@@ -102,7 +103,7 @@ def compute_summary(session, date):
     outcoming = select(Transaction).filter(
         Transaction.date.like(f'%{date}%')
     ).where(Transaction.category.notin_(
-        INCOM_CATEGORIES + UNACCOUNTED_CATEGORIES
+        INCOME_CATEGORIES + UNACCOUNTED_CATEGORIES
     )).where(
         Transaction.type.notin_(UNACCOUNTED_TYPES)
     )
@@ -217,15 +218,25 @@ def handle_transactions_file(session, username=None, file=None):
         username=username
     )
     if not user.relative:
-        relative = input('Enter full name relative: \n')
-    # if user not in USERS_RELATIONS.keys():
-        # print('This user is not in the list')
-        user.relative = relative
+        while True:
+            relative_is_needed = input(
+                'Do you want to share the budget with somebody? (yes or no) \n'
+            ).lower()
+            if relative_is_needed == YES:
+                relative = input('Enter full name relative: \n')
+                user.relative = relative
+                break
+            elif relative_is_needed == NO:
+                break
+            else:
+                print('Incorrect answer')
 
     if not file:
         while True:
             try:
-                file_name = input('Enter file name: \n')
+                file_name = input(
+                    'Enter name of input transactions CSV-file: \n'
+                )
                 data_transactions = PATH_TO_DATA + file_name
                 load_transactions(
                     session,
@@ -237,11 +248,6 @@ def handle_transactions_file(session, username=None, file=None):
             else:
                 break
 
-    # data_transactions = input()
-    # data_transactions = 'data/Nastia.csv'
-    # load_transactions(session, data_transactions, 'Nastia')
-    # data_transactions = 'data/Alex.csv'
-    # load_transactions(session, data_transactions, 'Alex')
     dates = extract_dates(data_transactions)
     for date in dates:
         compute_spendings(session, date)
@@ -255,10 +261,10 @@ def create_file(table, attribute, language=LANGUAGE_EN):
     tablename = table.__name__
     headers = []
     if language == LANGUAGE_RU:
-        filename = (TRANSLETION_RU[tablename] + GROUND + str(date)
+        filename = (TRANSLATION_EN_RU[tablename] + GROUND + str(date)
                     + TYPE_FILE)
         for item in attribute:
-            headers.append(TRANSLETION_RU[item])
+            headers.append(TRANSLATION_EN_RU[item])
     else:
         filename = tablename + GROUND + str(date) + TYPE_FILE
         headers = attribute
@@ -272,7 +278,7 @@ def create_file(table, attribute, language=LANGUAGE_EN):
     return file, writer
 
 
-def import_to_csv(session, table, language=LANGUAGE_EN):
+def export_to_csv(session, table, language=LANGUAGE_EN):
     attribute = []
     for member in table.__dict__.keys():
         if GROUND not in member:
@@ -287,15 +293,16 @@ def import_to_csv(session, table, language=LANGUAGE_EN):
             for attr in attribute:
                 if language == LANGUAGE_RU:
                     item_attr = getattr(item, attr)
-                    if item_attr in TRANSLETION_RU.keys():
-                        item_attr = TRANSLETION_RU[item_attr]
-                    dict_item[TRANSLETION_RU[attr]] = item_attr
+                    if item_attr in TRANSLATION_EN_RU.keys():
+                        item_attr = TRANSLATION_EN_RU[item_attr]
+                    dict_item[TRANSLATION_EN_RU[attr]] = item_attr
                 else:
                     dict_item[attr] = getattr(item, attr)
             writer.writerow(dict_item)
+    print(f'Done: {file.name}')
 
 
-def import_to_csv_categories(session, table, language=LANGUAGE_EN):
+def export_to_csv_categories(session, table, language=LANGUAGE_EN):
     attribute = []
     attribute.append(MONTH)
     attribute.append(YEAR)
@@ -319,13 +326,14 @@ def import_to_csv_categories(session, table, language=LANGUAGE_EN):
             )
             for item in table_month:
                 if language == LANGUAGE_RU:
-                    dict_item[TRANSLETION_RU[item.category]] = item.spending
+                    dict_item[TRANSLATION_EN_RU[item.category]] = item.spending
                 else:
                     dict_item[item.category] = item.spending
             if language == LANGUAGE_RU:
-                dict_item[TRANSLETION_RU[YEAR]] = item.year
-                dict_item[TRANSLETION_RU[MONTH]] = item.month
+                dict_item[TRANSLATION_EN_RU[YEAR]] = item.year
+                dict_item[TRANSLATION_EN_RU[MONTH]] = item.month
             else:
                 dict_item[YEAR] = item.year
                 dict_item[MONTH] = item.month
             writer.writerow(dict_item)
+    print(f'Done: {file.name}')
