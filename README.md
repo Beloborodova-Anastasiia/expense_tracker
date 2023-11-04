@@ -97,5 +97,3 @@ expense_tracker/output_files
 ### Author
 
 Anastasiia Beloborodova 
-
-anastasiia.beloborodova@gmail.com
